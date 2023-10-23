@@ -1,0 +1,43 @@
+version: 3.8.0
+
+services:
+ gcs-server:
+    container_name: fake-gcs-server
+    image: fsouza/fake-gcs-server:latest
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://0.0.0.0:4443/_internal/healthcheck || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    command:
+      - -scheme=http
+      - -port=4443
+      - -data=/storage
+    networks:
+      - integration-tests-network
+    volumes:
+      - gcs-server:/storage/test-bucket
+ gcs-client-tester:
+    container_name: gcs-client-tester
+    image: gcs-client-tester:latest
+    build:
+      context: ../src
+      dockerfile: ../etc/docker/Dockerfile
+    depends_on:
+      gcs-server:
+        condition: service_healthy
+        required: true
+        restart: true
+    environment:
+      - ENV=TEST
+      - GCS_BUCKET_NAME=test-bucket
+      - STORAGE_EMULATOR_HOST=http://gcs-server:4443
+    networks:
+      - integration-tests-network
+
+networks:
+  integration-tests-network:
+    name: gcs-network
+    driver: bridge
+volumes:
+    gcs-server:
