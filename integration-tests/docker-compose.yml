@@ -26,8 +26,6 @@ services:
     depends_on:
       gcs-server:
         condition: service_healthy
-        required: true
-        restart: true
     environment:
       - ENV=TEST
       - GCS_BUCKET_NAME=test-bucket
